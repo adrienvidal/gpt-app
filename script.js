@@ -1,81 +1,105 @@
-const higherBtn = document.getElementById('higher');
-const lowerBtn = document.getElementById('lower');
-const resetBtn = document.getElementById('reset');
-const currentCard = document.getElementById('current-card');
-const nextCard = document.getElementById('next-card');
-const message = document.getElementById('message');
+const startGameButton = document.getElementById('start-game')
+const gameInfo = document.getElementById('game-info')
 
-let deck = [];
+const suits = ['red', 'green', 'blue', 'yellow']
+const values = [
+  '0',
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  'Skip',
+  'Reverse',
+  'Draw Two'
+]
+const wilds = ['Wild', 'Wild Draw Four']
 
-function startGame() {
-    deck = generateDeck();
-    currentCard.textContent = drawCard();
-    nextCard.textContent = '';
-    message.textContent = '';
-    higherBtn.disabled = false;
-    lowerBtn.disabled = false;
+class Card {
+  constructor(suit, value) {
+    this.suit = suit
+    this.value = value
+  }
+
+  toString() {
+    return `${this.suit} ${this.value}`
+  }
 }
 
-function generateDeck() {
-    const suits = ['♣', '♦', '♥', '♠'];
-    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-    let deck = [];
-    for (let suit of suits) {
-      for (let value of values) {
-          deck.push({ value: value, suit: suit });
-      }
-  }
-  
-  return shuffle(deck);
+function createDeck() {
+  const deck = []
 
+  for (const suit of suits) {
+    for (const value of values) {
+      deck.push(new Card(suit, value))
+      // Add a duplicate for non-zero cards
+      if (value !== '0') {
+        deck.push(new Card(suit, value))
+      }
+    }
+  }
+  for (const wild of wilds) {
+    // Add 4 Wild and Wild Draw Four cards
+    for (let i = 0; i < 4; i++) {
+      deck.push(new Card('wild', wild))
+    }
+  }
+
+  return shuffle(deck)
 }
 
 function shuffle(array) {
-for (let i = array.length - 1; i > 0; i--) {
-const j = Math.floor(Math.random() * (i + 1));
-[array[i], array[j]] = [array[j], array[i]];
-}
-return array;
-}
-
-function drawCard() {
-const card = deck.pop();
-return `${card.value}${card.suit}`;
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[array[i], array[j]] = [array[j], array[i]]
+  }
+  return array
 }
 
-function compareCards(card1, card2) {
-const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-const card1Value = values.indexOf(card1.slice(0, -1));
-const card2Value = values.indexOf(card2.slice(0, -1));
+function startGame() {
+  const deck = createDeck()
+  const players = createPlayers(4)
+  dealCards(players, deck)
+  const discardPile = [deck.pop()]
+  const currentPlayer = 0
 
-if (card1Value < card2Value) {
-  return 'lower';
-} else if (card1Value > card2Value) {
-  return 'higher';
-} else {
-  return 'equal';
+  displayGameState(players, discardPile, currentPlayer)
 }
 
+function createPlayers(numPlayers) {
+  const players = []
+  for (let i = 0; i < numPlayers; i++) {
+    players.push({ id: i, hand: [] })
+  }
+  return players
 }
 
-function guess(guess) {
-const nextCardValue = drawCard();
-nextCard.textContent = nextCardValue;
-const result = compareCards(currentCard.textContent, nextCardValue);
-
-if (result === guess) {
-  message.textContent = 'You win!';
-} else {
-  message.textContent = 'You lose!';
+function dealCards(players, deck) {
+  for (let i = 0; i < 7; i++) {
+    for (const player of players) {
+      player.hand.push(deck.pop())
+    }
+  }
 }
 
-higherBtn.disabled = true;
-lowerBtn.disabled = true;
+function displayGameState(players, discardPile, currentPlayer) {
+  const discardTop = discardPile[discardPile.length - 1]
+  let gameState = `Current Card: ${discardTop.toString()}<br><br>;`
 
+  for (const player of players) {
+    const isCurrent = player.id === currentPlayer
+    gameState += `Player ${player.id + 1}${isCurrent ? ' (Current)' : ''}:<br>`
+    gameState += player.hand
+      .map((card, index) => `${index + 1}. ${card.toString()}`)
+      .join('<br>')
+    gameState += '<br><br>'
+  }
+
+  gameInfo.innerHTML = gameState
 }
 
-higherBtn.addEventListener('click', () => guess('higher'));
-lowerBtn.addEventListener('click', () => guess('lower'));
-resetBtn.addEventListener('click', startGame);
-
-startGame();
+startGameButton.addEventListener('click', startGame)
